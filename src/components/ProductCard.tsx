@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { ShoppingCart, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { ShoppingCart, Check, AlertCircle, Loader2, Minus, Plus } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Product } from '@/types';
@@ -14,22 +14,23 @@ import { useRouter } from 'next/navigation';
 export function ProductCard({ product }: { product: Product }) {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseStatus, setPurchaseStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [items, setItems] = useState(1);
   const { addToCart } = useCart();
   const router = useRouter();
 
   const handlePurchase = async () => {
     if (isPurchasing) return;
-
+  
     setIsPurchasing(true);
     setPurchaseStatus('loading');
-
+  
     try {
       const { orderId } = await purchaseProduct(product);
       setPurchaseStatus('success');
-
-      // Add to cart
-      addToCart(product);
-
+  
+      // ✅ Pass quantity correctly
+      addToCart(product, items);
+  
       toast.success('Purchase completed!', {
         description: `Order ID: ${orderId}`,
         action: {
@@ -39,26 +40,31 @@ export function ProductCard({ product }: { product: Product }) {
           },
         },
       });
-
+  
       // Reset after a brief delay
       setTimeout(() => {
         setPurchaseStatus('idle');
         setIsPurchasing(false);
       }, 2000);
-
+  
     } catch (error) {
       setPurchaseStatus('error');
-
+  
       toast.error('Purchase failed', {
         description: error instanceof Error ? error.message : 'Something went wrong',
       });
-
+  
       // Reset after a brief delay
       setTimeout(() => {
         setPurchaseStatus('idle');
         setIsPurchasing(false);
       }, 2000);
     }
+  };
+
+  const handleItemsChange = (newItems: number) => {
+    if (newItems < 1) return; // Prevent Items from going below 1
+    setItems(newItems);
   };
 
   const getButtonContent = () => {
@@ -117,6 +123,27 @@ export function ProductCard({ product }: { product: Product }) {
         <h3 className="text-lg font-bold tracking-tight mt-2">{product.name}</h3>
         <p className="text-sm text-muted-foreground">{product.manufacturer}</p>
         <p className="text-lg font-semibold mt-2">${product.price.toFixed(2)}</p>
+
+        {/* Items Controls */}
+        <div className="flex items-center space-x-2 mt-4">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => handleItemsChange(items - 1)}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <span className="w-8 text-center">{items}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => handleItemsChange(items + 1)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button
