@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Product } from '@/types';
 import { purchaseProduct } from '@/services/purchaseService';
+import { addOrder } from '@/services/orderService';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 
@@ -30,16 +31,28 @@ export function ProductCard({ product }: { product: Product }) {
   
       // ✅ Pass quantity correctly
       addToCart(product, items);
-  
-      toast.success('Purchase completed!', {
-        description: `Order ID: ${orderId}`,
-        action: {
-          label: 'View Cart',
-          onClick: () => {
-            router.push('/cart');
-          },
-        },
-      });
+
+      // Create an order for the order history
+      const currentDate = new Date().toISOString().split('T')[0];
+      const newOrder = {
+        id: orderId,
+        items: [{ ...product, quantity: 1 }],
+        total: product.price,
+        date: currentDate,
+        status: 'Processing' as const,
+      };
+       // Add to order history
+       await addOrder(newOrder);
+
+       toast.success('Purchase completed!', {
+         description: `Order ID: ${orderId}`,
+         action: {
+           label: 'View Orders',
+           onClick: () => {
+             router.push('/orders');
+           },
+         },
+       });
   
       // Reset after a brief delay
       setTimeout(() => {

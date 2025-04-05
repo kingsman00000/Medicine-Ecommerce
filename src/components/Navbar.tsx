@@ -24,6 +24,9 @@ export function Navbar() {
           <Link href="/products" className="text-sm font-medium transition-colors hover:text-primary">
             Products
           </Link>
+          <Link href="/orders" className="text-sm font-medium transition-colors hover:text-primary">
+            Orders
+          </Link>
 
           <Link href="/cart" className="relative">
             <ShoppingCart className="h-6 w-6" />
