@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { purchaseProduct } from "@/services/putOrderService";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getCartTotal } = useCart();
@@ -25,27 +26,47 @@ export default function CartPage() {
     updateQuantity(productId, quantity);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (items.length === 0) {
       toast.error('Your cart is empty', {
         description: 'Add some products to your cart before checkout',
       });
       return;
     }
-
+  
     setIsCheckingOut(true);
-
-    // Simulate checkout process
-    setTimeout(() => {
-      const orderId = `ORD-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-
-      toast.success('Order placed successfully!', {
-        description: `Your order ID: ${orderId}`,
+  
+    try {
+      console.log("Items in cart:", items);
+      // Call API for each item in the cart
+      const results = await Promise.all(
+        items.map(item =>
+          purchaseProduct(Number(item.id), item.price, item.quantity)
+        )
+      );
+  
+      // Check if any purchase failed
+      const failed = results.find(r => !r.success);
+  
+      if (failed) {
+        toast.error('Some items failed to checkout', {
+          description: failed.message,
+        });
+      } else {
+        const orderIds = results.map(r => r.orderId).filter(Boolean).join(', ');
+        toast.success('Order placed successfully!', {
+          description: `Your order IDs: ${orderIds}`,
+        });
+  
+        clearCart();
+      }
+    } catch (err) {
+      toast.error('Checkout failed', {
+        description: 'Unexpected error during checkout',
       });
-
-      clearCart();
+    } finally {
       setIsCheckingOut(false);
-    }, 2000);
+    }
   };
 
   if (items.length === 0) {
